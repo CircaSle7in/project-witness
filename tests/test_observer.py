@@ -89,6 +89,28 @@ class TestGateDecisions:
         observer.check_principles = original
         assert assessment.gate == GateDecision.REFUSE
 
+    def test_hard_principle_refuses_even_at_high_confidence(
+        self, observer: SilentObserver
+    ) -> None:
+        """Hard flags ALWAYS refuse, even with confidence >= 0.95."""
+        hard_flag = PrincipleFlag(
+            name="compassion",
+            severity="hard",
+            description="Potential harm detected.",
+        )
+        original = observer.check_principles
+        observer.check_principles = lambda action, ws: [hard_flag]
+
+        assessment = observer.assess(
+            proposed_action="look at the object",
+            world_state={},
+            model_confidence=0.99,
+            belief_state={},
+            category="physics",
+        )
+        observer.check_principles = original
+        assert assessment.gate == GateDecision.REFUSE
+
     def test_gate_act_on_high_confidence(
         self, observer: SilentObserver
     ) -> None:
@@ -135,7 +157,6 @@ class TestGateDecisions:
         self, observer: SilentObserver
     ) -> None:
         """When conflicts exist, gate = GATHER_EVIDENCE."""
-        # Override check_consistency to return conflicts
         original = observer.check_consistency
         observer.check_consistency = lambda a, ws, bs: ["belief A contradicts belief B"]
 
@@ -147,7 +168,23 @@ class TestGateDecisions:
             category="physics",
         )
         observer.check_consistency = original
-        # Low confidence + conflicts -> GATHER_EVIDENCE
+        assert assessment.gate == GateDecision.GATHER_EVIDENCE
+
+    def test_conflicts_override_high_confidence(
+        self, observer: SilentObserver
+    ) -> None:
+        """Conflicts force GATHER_EVIDENCE even when confidence is high."""
+        original = observer.check_consistency
+        observer.check_consistency = lambda a, ws, bs: ["conflicting beliefs"]
+
+        assessment = observer.assess(
+            proposed_action="look at the object",
+            world_state={},
+            model_confidence=0.99,
+            belief_state={},
+            category="physics",
+        )
+        observer.check_consistency = original
         assert assessment.gate == GateDecision.GATHER_EVIDENCE
 
 

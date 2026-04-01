@@ -326,9 +326,9 @@ def main() -> None:
         models.append(GeminiModel())
 
     if args.model in ("qwen", "both"):
-        from src.models.qwen_vl import QwenVLModel
+        from src.models.qwen_vl import QwenModel
 
-        models.append(QwenVLModel())
+        models.append(QwenModel())
 
     # Run evaluation
     all_results: list[EvalResult] = []

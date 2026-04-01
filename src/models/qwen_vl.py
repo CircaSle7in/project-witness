@@ -1,7 +1,8 @@
-"""Hosted Qwen2.5-VL wrapper using HuggingFace Inference API.
+"""Hosted Qwen2.5 wrapper using HuggingFace Inference API.
 
 Reads HF_TOKEN from the environment. Uses the huggingface_hub InferenceClient
-for chat completions with optional image support.
+for chat completions. Default model is Qwen2.5-72B-Instruct (text-only).
+Image support is available when using a VL variant model ID.
 """
 
 from __future__ import annotations
@@ -19,7 +20,7 @@ from src.models.base import BaseModel
 DEFAULT_MODEL_ID = "Qwen/Qwen2.5-72B-Instruct"
 
 
-class QwenVLModel(BaseModel):
+class QwenModel(BaseModel):
     """Wrapper for hosted Qwen2.5-VL via HuggingFace Inference API."""
 
     def __init__(

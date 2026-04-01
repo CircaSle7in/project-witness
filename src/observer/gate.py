@@ -113,12 +113,12 @@ def decide_gate(
 ) -> GateDecision:
     """Make the gate decision based on confidence, reversibility, and flags.
 
-    Decision logic:
-    - Any hard principle flag with low confidence -> REFUSE
-    - Confidence above threshold -> ACT
-    - Conflicts detected -> GATHER_EVIDENCE
-    - Low confidence but reversible -> WAIT
-    - Low confidence and not reversible -> ASK_HUMAN
+    Decision priority (highest to lowest):
+    1. Hard principle flags -> REFUSE unconditionally
+    2. Belief conflicts -> GATHER_EVIDENCE
+    3. Confidence above threshold -> ACT
+    4. Low confidence + reversible -> WAIT
+    5. Low confidence + irreversible -> ASK_HUMAN
 
     Args:
         calibrated_confidence: The calibrated confidence score (0-1).
@@ -129,20 +129,19 @@ def decide_gate(
     Returns:
         One of the five GateDecision values.
     """
-    threshold = compute_threshold(reversibility, principle_flags)
-
-    # Hard principle violations with insufficient confidence trigger REFUSE
+    # Hard principle violations ALWAYS refuse, regardless of confidence
     hard_flags = [f for f in principle_flags if f.severity == "hard"]
-    if hard_flags and calibrated_confidence < 0.95:
+    if hard_flags:
         return GateDecision.REFUSE
 
-    # Confidence above threshold: approve the action
-    if calibrated_confidence >= threshold:
-        return GateDecision.ACT
-
-    # Belief conflicts suggest we need more information
+    # Belief conflicts require more evidence before acting
     if conflicts:
         return GateDecision.GATHER_EVIDENCE
+
+    # Confidence above dynamic threshold: approve the action
+    threshold = compute_threshold(reversibility, principle_flags)
+    if calibrated_confidence >= threshold:
+        return GateDecision.ACT
 
     # Low confidence: choose between WAIT and ASK_HUMAN based on reversibility
     if reversibility >= 0.7:

@@ -52,12 +52,11 @@ class SelfModelTracker:
             if not tables:
                 return self._model
 
-            # Get recent calibration error
+            # Get recent calibration error (use a subquery for the 50 most recent rows)
             result = self._db.execute(
                 "SELECT AVG(ABS(calibrated_confidence - CASE WHEN correct THEN 1.0 ELSE 0.0 END)) "
-                "FROM calibration_log "
-                "ORDER BY rowid DESC "
-                "LIMIT 50"
+                "FROM (SELECT calibrated_confidence, correct FROM calibration_log "
+                "ORDER BY rowid DESC LIMIT 50)"
             ).fetchone()
 
             if result and result[0] is not None:
@@ -65,10 +64,10 @@ class SelfModelTracker:
 
             # Refresh uncertainty areas from recent misses
             misses = self._db.execute(
-                "SELECT DISTINCT category FROM calibration_log "
-                "WHERE correct = false "
-                "ORDER BY rowid DESC "
-                "LIMIT 10"
+                "SELECT DISTINCT category FROM ("
+                "SELECT category, correct FROM calibration_log "
+                "ORDER BY rowid DESC LIMIT 50) "
+                "WHERE correct = false"
             ).fetchall()
 
             self._model.uncertainty_areas = [row[0] for row in misses]

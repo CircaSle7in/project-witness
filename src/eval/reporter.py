@@ -8,6 +8,7 @@ and per-category breakdowns.
 from __future__ import annotations
 
 from collections import defaultdict
+from pathlib import Path
 
 import duckdb
 import plotly.graph_objects as go
@@ -32,6 +33,9 @@ def load_results(db_path: str) -> list[EvalResult]:
     Returns:
         A list of EvalResult objects.
     """
+    if not Path(db_path).exists():
+        return []
+
     db = duckdb.connect(db_path, read_only=True)
 
     try:
