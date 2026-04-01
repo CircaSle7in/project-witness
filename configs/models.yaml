@@ -4,7 +4,7 @@
 models:
   gemini-flash:
     provider: google
-    model_id: gemini-2.0-flash
+    model_id: gemini-2.5-flash
     api_key_env: GEMINI_API_KEY
     capabilities:
       - text
@@ -16,18 +16,28 @@ models:
     max_tokens: 4096
     notes: "Primary VLM and LLM judge. Free tier with generous limits."
 
-  qwen-vl:
-    provider: huggingface  # or together_ai
-    model_id: Qwen/Qwen2.5-VL-7B-Instruct
-    api_key_env: QWEN_API_KEY
-    api_base_env: QWEN_API_BASE  # optional override
+  qwen-72b:
+    provider: huggingface
+    model_id: Qwen/Qwen2.5-72B-Instruct
+    api_key_env: HF_TOKEN
     capabilities:
       - text
-      - image
     roles:
       - evaluator
     max_tokens: 4096
-    notes: "Best open-source video VLM. Apache 2.0. Hosted inference only in v0.1."
+    notes: "72B open-weight model via HF Inference API. Text-only but strong physics reasoning. Free tier."
+
+  # VL variant - use when HF serverless endpoint is stable
+  # qwen-vl:
+  #   provider: huggingface
+  #   model_id: Qwen/Qwen2.5-VL-7B-Instruct
+  #   api_key_env: HF_TOKEN
+  #   capabilities:
+  #     - text
+  #     - image
+  #   roles:
+  #     - evaluator
+  #   notes: "Vision-language variant. HF endpoint intermittently available."
 
   # Stretch goal - only if hosted endpoint available
   # cosmos-reason:

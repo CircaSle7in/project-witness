@@ -1,7 +1,7 @@
-"""Hosted Qwen2.5-VL wrapper supporting HuggingFace Inference API and Together AI.
+"""Hosted Qwen2.5-VL wrapper using HuggingFace Inference API.
 
-Reads QWEN_API_KEY and QWEN_API_BASE from the environment. Falls back to
-HuggingFace Inference API if QWEN_API_BASE is not set.
+Reads HF_TOKEN from the environment. Uses the huggingface_hub InferenceClient
+for chat completions with optional image support.
 """
 
 from __future__ import annotations
@@ -12,51 +12,39 @@ import os
 import re
 from pathlib import Path
 
-import httpx
+from huggingface_hub import InferenceClient
 
 from src.models.base import BaseModel
 
-# Default endpoints for each provider
-HF_INFERENCE_BASE = "https://api-inference.huggingface.co/models/Qwen/Qwen2.5-VL-7B-Instruct"
-TOGETHER_AI_BASE = "https://api.together.xyz/v1/chat/completions"
-TOGETHER_MODEL_ID = "Qwen/Qwen2.5-VL-7B-Instruct"
+DEFAULT_MODEL_ID = "Qwen/Qwen2.5-72B-Instruct"
 
 
 class QwenVLModel(BaseModel):
-    """Wrapper for hosted Qwen2.5-VL via HuggingFace Inference API or Together AI."""
+    """Wrapper for hosted Qwen2.5-VL via HuggingFace Inference API."""
 
     def __init__(
         self,
+        model_id: str = DEFAULT_MODEL_ID,
         api_key: str | None = None,
-        api_base: str | None = None,
     ) -> None:
         """Initialize the Qwen VL client.
 
         Args:
-            api_key: API key. Falls back to QWEN_API_KEY env var.
-            api_base: Base URL for the API. Falls back to QWEN_API_BASE env var,
-                      then to HuggingFace Inference API.
+            model_id: HuggingFace model ID.
+            api_key: HF token. Falls back to HF_TOKEN env var.
 
         Raises:
             ValueError: If no API key is available.
         """
-        self.api_key = api_key or os.environ.get("QWEN_API_KEY")
-        if not self.api_key:
+        token = api_key or os.environ.get("HF_TOKEN")
+        if not token:
             raise ValueError(
-                "QWEN_API_KEY environment variable is required. "
-                "Set it to your HuggingFace or Together AI API key."
+                "HF_TOKEN environment variable is required. "
+                "Get a free token at https://huggingface.co/settings/tokens"
             )
-        self.api_base = api_base or os.environ.get("QWEN_API_BASE", "")
-        self._is_together = "together" in self.api_base.lower()
-        self._is_hf = not self._is_together
-
-        if not self.api_base:
-            self.api_base = HF_INFERENCE_BASE
-            self._is_hf = True
-            self._is_together = False
-
-        self.name = "qwen2.5-vl-7b"
-        self._client = httpx.AsyncClient(timeout=120.0)
+        self._client = InferenceClient(model=model_id, token=token)
+        self.model_id = model_id
+        self.name = "qwen2.5-72b"
 
     async def query(
         self,
@@ -64,16 +52,12 @@ class QwenVLModel(BaseModel):
         image_path: str | None = None,
         video_path: str | None = None,
     ) -> tuple[str, float]:
-        """Send a prompt with optional image to the hosted Qwen endpoint.
-
-        Note: Video is not directly supported by most hosted endpoints.
-        If a video path is provided, only the first frame concept is described
-        in the prompt.
+        """Send a prompt with optional image to hosted Qwen2.5-VL.
 
         Args:
             prompt: The text prompt to send.
             image_path: Optional path to an image file.
-            video_path: Optional path to a video file (limited support).
+            video_path: Optional path to a video file (noted in prompt only).
 
         Returns:
             A tuple of (response_text, confidence_score).
@@ -91,11 +75,25 @@ class QwenVLModel(BaseModel):
                 + structured_prompt
             )
 
-        if self._is_together:
-            text = await self._query_together(structured_prompt, image_path)
-        else:
-            text = await self._query_hf(structured_prompt, image_path)
+        content: list[dict] = []
 
+        if image_path and Path(image_path).exists():
+            img_b64 = base64.b64encode(Path(image_path).read_bytes()).decode()
+            suffix = Path(image_path).suffix.lower().lstrip(".")
+            mime = f"image/{suffix}" if suffix != "jpg" else "image/jpeg"
+            content.append({
+                "type": "image_url",
+                "image_url": {"url": f"data:{mime};base64,{img_b64}"},
+            })
+
+        content.append({"type": "text", "text": structured_prompt})
+
+        response = self._client.chat_completion(
+            messages=[{"role": "user", "content": content}],
+            max_tokens=1024,
+        )
+
+        text = response.choices[0].message.content or ""
         confidence = self._extract_confidence(text)
         clean_text = re.sub(
             r'\s*\{"confidence":\s*[\d.]+\}\s*$', "", text
@@ -146,107 +144,9 @@ class QwenVLModel(BaseModel):
         except Exception:
             return False
 
-    async def _query_hf(self, prompt: str, image_path: str | None) -> str:
-        """Send a query to the HuggingFace Inference API.
-
-        Args:
-            prompt: The text prompt.
-            image_path: Optional image file path.
-
-        Returns:
-            The response text from the model.
-        """
-        headers = {"Authorization": f"Bearer {self.api_key}"}
-
-        content: list[dict] = []
-        if image_path and Path(image_path).exists():
-            img_b64 = base64.b64encode(Path(image_path).read_bytes()).decode()
-            suffix = Path(image_path).suffix.lower().lstrip(".")
-            mime = f"image/{suffix}" if suffix != "jpg" else "image/jpeg"
-            content.append({
-                "type": "image_url",
-                "image_url": {"url": f"data:{mime};base64,{img_b64}"},
-            })
-
-        content.append({"type": "text", "text": prompt})
-
-        payload = {
-            "inputs": "",
-            "parameters": {
-                "messages": [{"role": "user", "content": content}],
-                "max_new_tokens": 1024,
-            },
-        }
-
-        resp = await self._client.post(
-            self.api_base, headers=headers, json=payload
-        )
-        resp.raise_for_status()
-        data = resp.json()
-
-        if isinstance(data, list) and len(data) > 0:
-            return data[0].get("generated_text", "")
-        if isinstance(data, dict):
-            choices = data.get("choices", [])
-            if choices:
-                return choices[0].get("message", {}).get("content", "")
-            return data.get("generated_text", "")
-        return str(data)
-
-    async def _query_together(self, prompt: str, image_path: str | None) -> str:
-        """Send a query to the Together AI API.
-
-        Args:
-            prompt: The text prompt.
-            image_path: Optional image file path.
-
-        Returns:
-            The response text from the model.
-        """
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-        }
-
-        content: list[dict] = []
-        if image_path and Path(image_path).exists():
-            img_b64 = base64.b64encode(Path(image_path).read_bytes()).decode()
-            suffix = Path(image_path).suffix.lower().lstrip(".")
-            mime = f"image/{suffix}" if suffix != "jpg" else "image/jpeg"
-            content.append({
-                "type": "image_url",
-                "image_url": {"url": f"data:{mime};base64,{img_b64}"},
-            })
-
-        content.append({"type": "text", "text": prompt})
-
-        payload = {
-            "model": TOGETHER_MODEL_ID,
-            "messages": [{"role": "user", "content": content}],
-            "max_tokens": 1024,
-        }
-
-        resp = await self._client.post(
-            self.api_base, headers=headers, json=payload
-        )
-        resp.raise_for_status()
-        data = resp.json()
-
-        choices = data.get("choices", [])
-        if choices:
-            return choices[0].get("message", {}).get("content", "")
-        return ""
-
     @staticmethod
     def _extract_confidence(text: str) -> float:
-        """Extract confidence score from model response text.
-
-        Args:
-            text: The raw model response that may contain a confidence JSON.
-
-        Returns:
-            The extracted confidence value, or 0.5 as a default.
-        """
+        """Extract confidence score from model response text."""
         match = re.search(r'\{"confidence":\s*([\d.]+)\}', text)
         if match:
             try:
@@ -258,14 +158,7 @@ class QwenVLModel(BaseModel):
 
     @staticmethod
     def _parse_judge_response(text: str) -> tuple[float, str]:
-        """Parse a judge response JSON into score and explanation.
-
-        Args:
-            text: The raw judge response text.
-
-        Returns:
-            A tuple of (score, explanation).
-        """
+        """Parse a judge response JSON into score and explanation."""
         json_match = re.search(r"\{[^}]+\}", text, re.DOTALL)
         if json_match:
             try:

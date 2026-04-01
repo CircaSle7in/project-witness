@@ -20,7 +20,7 @@ from src.models.base import BaseModel
 class GeminiModel(BaseModel):
     """Wrapper for Google Gemini Flash via the google-genai SDK."""
 
-    def __init__(self, model_id: str = "gemini-2.0-flash") -> None:
+    def __init__(self, model_id: str = "gemini-2.5-flash") -> None:
         """Initialize the Gemini client.
 
         Args:
