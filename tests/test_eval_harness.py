@@ -156,3 +156,14 @@ class TestScoring:
     def test_multi_match_empty_list(self) -> None:
         """Empty expected list should return 1.0 (vacuously true)."""
         assert multi_match("anything", []) == pytest.approx(1.0)
+
+    def test_multi_match_underscore_splitting(self) -> None:
+        """Compound items like 'fill_with_liquid' match when all words appear."""
+        response = "You can fill it with liquid and drink from the mug."
+        expected = ["fill_with_liquid", "drink_from", "burn_hand"]
+
+        score = multi_match(response, expected)
+        # "fill_with_liquid" -> "fill","with","liquid" all present
+        # "drink_from" -> "drink","from" all present
+        # "burn_hand" -> "burn" not present
+        assert score == pytest.approx(2.0 / 3.0)

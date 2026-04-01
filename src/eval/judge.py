@@ -90,7 +90,9 @@ def fuzzy_match(
 def multi_match(response: str, expected_items: list[str]) -> float:
     """Check what fraction of expected items appear in the response.
 
-    Performs case-insensitive substring matching for each expected item.
+    For each expected item, splits on underscores and checks if ALL words
+    from the item appear somewhere in the response. This handles both
+    simple items ("fill") and compound items ("fill_with_liquid").
 
     Args:
         response: The model's response.
@@ -103,7 +105,12 @@ def multi_match(response: str, expected_items: list[str]) -> float:
         return 1.0
 
     response_lower = response.lower()
-    found = sum(1 for item in expected_items if item.lower() in response_lower)
+
+    def item_matches(item: str) -> bool:
+        words = item.lower().replace("_", " ").split()
+        return all(word in response_lower for word in words)
+
+    found = sum(1 for item in expected_items if item_matches(item))
     return found / len(expected_items)
 
 
