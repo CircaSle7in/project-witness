@@ -1,0 +1,117 @@
+# Basic Physics Benchmark - Project Witness v0.1
+# Tests whether a model understands everyday physical phenomena:
+# gravity, support, momentum, collisions, and friction.
+
+tasks:
+  - task_id: physics_001
+    video: null
+    image: null
+    category: basic_physics
+    subcategory: gravity
+    prompt: "A tennis ball is held at shoulder height and released. Describe what happens to the ball."
+    expected: "The ball falls straight down due to gravity, accelerating as it drops. It hits the ground and bounces, reaching a lower height each time until it eventually comes to rest on the ground."
+    expected_actions: null
+    expected_risks: null
+    scoring: llm_judge
+    difficulty: easy
+    requires_uncertainty: false
+    metadata: null
+
+  - task_id: physics_002
+    video: null
+    image: null
+    category: basic_physics
+    subcategory: support
+    prompt: "Four wooden blocks are stacked in a tower on a table. The second block from the bottom is suddenly removed. What happens to the tower?"
+    expected: "The top two blocks lose their support and fall. The bottom block remains on the table. The tower collapses because the second block was bearing the weight of the two blocks above it."
+    expected_actions: null
+    expected_risks: null
+    scoring: llm_judge
+    difficulty: easy
+    requires_uncertainty: false
+    metadata: null
+
+  - task_id: physics_003
+    video: null
+    image: null
+    category: basic_physics
+    subcategory: gravity
+    prompt: "A marble is placed at the top of a smooth, curved ramp that dips down into a valley and then rises back up to a slightly lower height on the other side. Describe the marble's motion."
+    expected: "The marble rolls down the ramp, accelerating under gravity. It reaches maximum speed at the bottom of the valley, then decelerates as it climbs the opposite side. Because the other side is slightly lower than the starting point, the marble has enough energy to roll over the top and continue, though with less speed than it had at the bottom."
+    expected_actions: null
+    expected_risks: null
+    scoring: llm_judge
+    difficulty: easy
+    requires_uncertainty: false
+    metadata: null
+
+  - task_id: physics_004
+    video: null
+    image: null
+    category: basic_physics
+    subcategory: collision
+    prompt: "A billiard ball rolling at moderate speed hits a stationary billiard ball head-on. Both balls have the same mass. Describe the outcome."
+    expected: "In a nearly elastic head-on collision between equal-mass objects, the moving ball stops (or nearly stops) and the stationary ball moves away at roughly the same speed the first ball had. Energy and momentum are transferred from the first ball to the second."
+    expected_actions: null
+    expected_risks: null
+    scoring: llm_judge
+    difficulty: medium
+    requires_uncertainty: false
+    metadata: null
+
+  - task_id: physics_005
+    video: null
+    image: null
+    category: basic_physics
+    subcategory: momentum
+    prompt: "A shopping cart is rolling slowly across a parking lot. A heavy bag of groceries is dropped vertically into the cart from above. What happens to the cart's speed?"
+    expected: "The cart slows down. The heavy bag adds mass to the system but contributes no horizontal momentum. Conservation of momentum means the same horizontal momentum is now shared across a greater total mass, so the cart moves more slowly."
+    expected_actions: null
+    expected_risks: null
+    scoring: llm_judge
+    difficulty: medium
+    requires_uncertainty: false
+    metadata: null
+
+  - task_id: physics_006
+    video: null
+    image: null
+    category: basic_physics
+    subcategory: support
+    prompt: "A heavy book is placed so that it overhangs the edge of a table by more than half its length. Nothing else is holding the book. What happens?"
+    expected: "The book tips over and falls off the table. When more than half the book extends past the edge, the center of gravity is no longer above the table surface, so gravity creates a torque that rotates the book downward."
+    expected_actions: null
+    expected_risks: null
+    scoring: llm_judge
+    difficulty: medium
+    requires_uncertainty: false
+    metadata: null
+
+  - task_id: physics_007
+    video: null
+    image: null
+    category: basic_physics
+    subcategory: gravity_and_friction
+    prompt: "A wooden block is placed on a tilted metal ramp. The ramp angle is gradually increased. Describe what happens as the angle grows steeper."
+    expected: "Initially the block stays in place because static friction is strong enough to resist the gravitational component pulling it down the slope. As the angle increases, the gravitational component along the ramp grows while the normal force decreases, reducing the maximum static friction. At a critical angle the block begins to slide. Once sliding, kinetic friction (which is less than static friction) acts on it, so the block accelerates down the ramp."
+    expected_actions: null
+    expected_risks: null
+    scoring: llm_judge
+    difficulty: hard
+    requires_uncertainty: false
+    metadata: null
+
+  - task_id: physics_008
+    video: null
+    image: null
+    category: basic_physics
+    subcategory: collision
+    prompt: "A small rubber ball is placed on top of a large basketball, and both are dropped together from waist height onto a hard floor. The basketball hits the floor first. Describe what happens to the small ball."
+    expected: "The small ball launches dramatically upward, reaching a height much greater than the original drop height. When the basketball bounces off the floor and collides with the small ball above it, the basketball transfers a large fraction of its momentum to the lighter ball. The mass difference amplifies the effect, sending the small ball high into the air."
+    expected_actions: null
+    expected_risks: null
+    scoring: llm_judge
+    difficulty: hard
+    requires_uncertainty: false
+    metadata:
+      notes: "Classic stacked-ball drop demonstration. Tests understanding of sequential elastic collisions and momentum transfer between objects of different mass."

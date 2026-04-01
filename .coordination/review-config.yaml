@@ -1,0 +1,44 @@
+# Claude-to-Codex Review Loop Configuration
+# This file defines the contract between Claude Code (implementer) and Codex CLI (reviewer)
+
+test_commands:
+  - "python -m pytest tests/ -v --tb=short"
+
+lint_commands:
+  - "python -m ruff check src/ tests/"
+
+review_paths:
+  - "src/"
+  - "tests/"
+  - "configs/"
+
+ignore_paths:
+  - ".coordination/**"
+  - "data/**"
+  - "notebooks/**"
+  - ".venv/**"
+
+# Severity gating policy
+auto_fix_max_severity: medium
+auto_fix_kinds:
+  - test
+  - logic
+  - lint
+
+human_gate_kinds:
+  - security
+  - architecture
+  - migration
+  - repeated_failure
+
+max_auto_fix_rounds: 2
+codex_timeout_seconds: 120
+
+# Discord notification policy
+discord_notify_on:
+  - human_gate
+  - timeout
+  - codex_failure
+
+discord_webhook_path: "~/.config/project-witness/discord-webhook-url"
+discord_channel_id: "1489013750358085722"

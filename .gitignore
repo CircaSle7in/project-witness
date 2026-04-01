@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/
+
+# Virtual environment
+.venv/
+
+# Ruff
+.ruff_cache/
+
+# Data artifacts
+data/results/*.duckdb
+data/clips/*.mp4
+data/clips/*.webm
+
+# Coordination
+.coordination/reviews/*/
+!.coordination/reviews/.gitkeep
+
+# Environment
+.env
+
+# OS
+.DS_Store
+
+# Notebooks
+notebooks/.ipynb_checkpoints/

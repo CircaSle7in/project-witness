@@ -1,0 +1,119 @@
+# Object Permanence Benchmark - Project Witness v0.1
+# Tests whether a model understands that objects continue to exist
+# when occluded, moved, or transferred between containers.
+
+tasks:
+  - task_id: permanence_001
+    video: null
+    image: null
+    category: object_permanence
+    subcategory: occlusion
+    prompt: "A red ball is on a table. A book is placed in front of the ball, hiding it from view. Is the ball still on the table?"
+    expected: "Yes, the ball is still on the table behind the book. The book blocks the line of sight but does not remove or move the ball."
+    expected_actions: null
+    expected_risks: null
+    scoring: llm_judge
+    difficulty: easy
+    requires_uncertainty: false
+    metadata: null
+
+  - task_id: permanence_002
+    video: null
+    image: null
+    category: object_permanence
+    subcategory: occlusion
+    prompt: "A toy car rolls behind a sofa. You did not hear any crash or sound of it stopping. Where is the toy car now?"
+    expected: "The toy car is behind the sofa. It rolled out of sight but continues to exist behind the furniture. It may still be moving or may have come to rest due to friction."
+    expected_actions: null
+    expected_risks: null
+    scoring: llm_judge
+    difficulty: easy
+    requires_uncertainty: false
+    metadata: null
+
+  - task_id: permanence_003
+    video: null
+    image: null
+    category: object_permanence
+    subcategory: container_transfer
+    prompt: "A marble is placed in Cup A. Cup A is then turned upside down onto a tray. Where is the marble?"
+    expected: "The marble is on the tray, trapped under the inverted Cup A. Gravity pulled the marble down when the cup was flipped, and the tray prevents it from rolling away."
+    expected_actions: null
+    expected_risks: null
+    scoring: llm_judge
+    difficulty: easy
+    requires_uncertainty: false
+    metadata: null
+
+  - task_id: permanence_004
+    video: null
+    image: null
+    category: object_permanence
+    subcategory: displacement
+    prompt: "A child places a toy dinosaur inside a closed shoebox, then carries the shoebox from the bedroom to the kitchen. The child does not open the box during the walk. Where is the toy dinosaur?"
+    expected: "The toy dinosaur is inside the closed shoebox, which is now in the kitchen. The toy moved with its container because the box was not opened during transport."
+    expected_actions: null
+    expected_risks: null
+    scoring: llm_judge
+    difficulty: medium
+    requires_uncertainty: false
+    metadata: null
+
+  - task_id: permanence_005
+    video: null
+    image: null
+    category: object_permanence
+    subcategory: multi_step_transfer
+    prompt: "Person A puts a key in a drawer. While Person A leaves the room, Person B moves the key from the drawer to a jar on the shelf. Person A returns. Where does Person A believe the key is? Where is the key actually?"
+    expected: "Person A believes the key is still in the drawer, because A did not witness the transfer. The key is actually in the jar on the shelf where Person B placed it."
+    expected_actions: null
+    expected_risks: null
+    scoring: llm_judge
+    difficulty: medium
+    requires_uncertainty: false
+    metadata:
+      notes: "This is a classic Sally-Anne false-belief test adapted for object permanence."
+
+  - task_id: permanence_006
+    video: null
+    image: null
+    category: object_permanence
+    subcategory: partial_occlusion
+    prompt: "A cat walks behind a narrow fence post. You can see the cat's tail sticking out on one side and its head sticking out on the other side. How many cats are present?"
+    expected: "There is one cat. The visible head and tail belong to the same cat whose midsection is hidden behind the fence post. The cat is a single continuous object, not two separate things."
+    expected_actions: null
+    expected_risks: null
+    scoring: llm_judge
+    difficulty: medium
+    requires_uncertainty: false
+    metadata: null
+
+  - task_id: permanence_007
+    video: null
+    image: null
+    category: object_permanence
+    subcategory: multi_step_transfer
+    prompt: "Three cups are on a table. A coin is placed under Cup B (the middle cup). The cups are then shuffled: Cup B swaps position with Cup A, then Cup A (now in the middle) swaps position with Cup C. Under which cup is the coin?"
+    expected: "The coin is under the cup that was originally Cup B. After the first swap, Cup B moved to the left position. After the second swap, Cup A (in the middle) and Cup C swapped, but Cup B stayed in the left position. The coin is under the leftmost cup."
+    expected_actions: null
+    expected_risks: null
+    scoring: llm_judge
+    difficulty: hard
+    requires_uncertainty: false
+    metadata:
+      notes: "Shell game scenario. Tests tracking an object through multiple spatial transformations."
+
+  - task_id: permanence_008
+    video: null
+    image: null
+    category: object_permanence
+    subcategory: disappearance_reasoning
+    prompt: "You place your phone on the kitchen counter. You leave the room for 10 minutes. When you return, the phone is not on the counter. The window is closed, no one else is home, and the house has no pets. What are the most likely explanations?"
+    expected: "The most likely explanations are: (1) you misremember where you placed it and it is elsewhere in the kitchen, (2) it vibrated or slid off the counter onto the floor or behind something, or (3) it was in a slightly different spot on the counter and is hidden behind another object. The phone still exists somewhere in the house since all exits were sealed."
+    expected_actions: null
+    expected_risks: null
+    scoring: llm_judge
+    difficulty: hard
+    requires_uncertainty: true
+    metadata:
+      notes: "Tests reasoning about plausible explanations when an object seems to vanish, while maintaining the principle that it still exists."

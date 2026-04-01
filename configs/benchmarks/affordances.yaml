@@ -1,0 +1,229 @@
+# Affordances Benchmark - Project Witness v0.1
+# Tests whether a model can identify what actions an object affords.
+# No existing benchmark tests this systematically.
+# Scoring uses multi_match to compare against lists of valid actions and risks.
+
+tasks:
+  - task_id: affordance_001
+    video: null
+    image: null
+    category: affordances
+    subcategory: container
+    prompt: "A ceramic coffee mug is sitting empty on a kitchen table. What can a person do with this mug?"
+    expected: "The mug affords filling with liquid, drinking from, pouring from, holding small objects, carrying by the handle, moving to another location, stacking with other mugs, and using as a small container for pens or utensils."
+    expected_actions:
+      - fill_with_liquid
+      - drink_from
+      - pour_from
+      - hold_small_objects
+      - carry_by_handle
+      - move
+      - stack
+    expected_risks:
+      - drop_and_break
+      - burn_hand_if_hot_liquid
+      - spill_contents
+    scoring: multi_match
+    difficulty: easy
+    requires_uncertainty: false
+    metadata: null
+
+  - task_id: affordance_002
+    video: null
+    image: null
+    category: affordances
+    subcategory: tool
+    prompt: "A sharp kitchen knife is lying on a wooden cutting board. What actions does this knife afford?"
+    expected: "The knife affords cutting food, slicing, dicing, chopping, mincing, spreading soft substances like butter, scraping ingredients off the board, and prying apart stuck items. It can also be carried, washed, and stored."
+    expected_actions:
+      - cut
+      - slice
+      - dice
+      - chop
+      - mince
+      - spread
+      - scrape
+      - carry
+      - store
+    expected_risks:
+      - cut_hand
+      - drop_on_foot
+      - damage_surface_if_misused
+      - injure_others_if_handled_carelessly
+    scoring: multi_match
+    difficulty: easy
+    requires_uncertainty: false
+    metadata: null
+
+  - task_id: affordance_003
+    video: null
+    image: null
+    category: affordances
+    subcategory: container
+    prompt: "A large empty cardboard box (roughly 60cm on each side) is on the floor of a living room. What can a person do with this box?"
+    expected: "The box affords storing items inside it, carrying objects, stacking on top of or beneath other boxes, sitting on (if sturdy enough), standing on briefly, using as a makeshift table, cutting into a costume or playhouse for a child, flattening for recycling, using as a sled on a hill, and breaking down for packing material."
+    expected_actions:
+      - store_items
+      - carry_objects
+      - stack
+      - sit_on
+      - stand_on
+      - use_as_table
+      - cut_into_shape
+      - flatten
+      - recycle
+      - use_as_play_structure
+    expected_risks:
+      - collapse_under_weight
+      - tear_if_overloaded
+      - trip_hazard
+    scoring: multi_match
+    difficulty: easy
+    requires_uncertainty: false
+    metadata: null
+
+  - task_id: affordance_004
+    video: null
+    image: null
+    category: affordances
+    subcategory: flexible_object
+    prompt: "A three-meter length of sturdy rope is coiled on a workbench. What actions does this rope afford?"
+    expected: "The rope affords tying objects together, pulling or towing, hanging items, creating a clothesline, securing a load, lashing, climbing (if anchored), swinging, making a lasso, skipping, bundling items, creating a barrier or boundary marker, and using as an emergency belt or strap."
+    expected_actions:
+      - tie
+      - pull
+      - tow
+      - hang_items
+      - secure_load
+      - climb
+      - swing
+      - skip_rope
+      - bundle
+      - create_boundary
+      - lash
+    expected_risks:
+      - trip_hazard
+      - strangulation_if_misused
+      - rope_burn_from_friction
+      - snap_under_excessive_load
+    scoring: multi_match
+    difficulty: medium
+    requires_uncertainty: false
+    metadata: null
+
+  - task_id: affordance_005
+    video: null
+    image: null
+    category: affordances
+    subcategory: furniture
+    prompt: "A sturdy wooden chair is in the middle of a room. What actions does this chair afford beyond sitting?"
+    expected: "Beyond sitting, the chair affords standing on to reach high places, using as a step stool, propping open a door, wedging under a door handle for security, hanging clothes on the back, using as a small table, stacking with other chairs, moving as a barrier, and resting feet on."
+    expected_actions:
+      - sit
+      - stand_on
+      - use_as_step_stool
+      - prop_door_open
+      - wedge_door_closed
+      - hang_clothes
+      - use_as_table
+      - stack
+      - move_as_barrier
+      - rest_feet_on
+    expected_risks:
+      - tip_over_if_stood_on_edge
+      - fall_from_height
+      - scratch_floor_when_dragged
+      - pinch_fingers_when_folding
+    scoring: multi_match
+    difficulty: medium
+    requires_uncertainty: false
+    metadata: null
+
+  - task_id: affordance_006
+    video: null
+    image: null
+    category: affordances
+    subcategory: material
+    prompt: "A standard brick is lying on the ground at a construction site. What can a person do with this brick?"
+    expected: "The brick affords building or stacking into a wall, using as a weight or anchor, propping open a door, using as a step or platform, hammering (as an improvised tool), leveling uneven furniture, marking a boundary, supporting a shelf or board, and breaking into smaller pieces for fill material."
+    expected_actions:
+      - build_wall
+      - stack
+      - use_as_weight
+      - prop_door
+      - use_as_step
+      - use_as_hammer
+      - level_furniture
+      - mark_boundary
+      - support_shelf
+      - break_for_fill
+    expected_risks:
+      - drop_on_foot
+      - crush_fingers
+      - back_injury_from_lifting
+      - damage_surfaces
+      - sharp_edges_if_broken
+    scoring: multi_match
+    difficulty: medium
+    requires_uncertainty: false
+    metadata: null
+
+  - task_id: affordance_007
+    video: null
+    image: null
+    category: affordances
+    subcategory: multi_object
+    prompt: "On a desk you see: a rubber band, a pencil, a sheet of paper, and a paper clip. What can you do with these objects individually and in combination?"
+    expected: "Individually: the rubber band affords stretching, binding, and launching small objects; the pencil affords writing, drawing, poking holes, and drumming; the paper affords writing on, folding (origami, paper airplane), wrapping, and fanning; the paper clip affords clipping papers, picking locks (in fiction), resetting small buttons, and bending into shapes. In combination: rubber band plus pencil creates a catapult or slingshot, paper clip holds multiple sheets of paper, pencil on paper enables writing or drawing, rubber band bundles pencil and paper together, and paper clip bent around pencil creates a spinning toy."
+    expected_actions:
+      - write
+      - draw
+      - fold_paper
+      - make_paper_airplane
+      - clip_papers_together
+      - launch_rubber_band
+      - bind_objects_with_rubber_band
+      - build_catapult
+      - reset_button_with_clip
+      - bend_clip_into_shape
+      - fan_with_paper
+    expected_risks:
+      - paper_cut
+      - rubber_band_snap
+      - pencil_point_poke
+      - eye_injury_from_launched_object
+    scoring: multi_match
+    difficulty: hard
+    requires_uncertainty: false
+    metadata:
+      notes: "Tests combinatorial affordance reasoning across multiple objects."
+
+  - task_id: affordance_008
+    video: null
+    image: null
+    category: affordances
+    subcategory: context_dependent
+    prompt: "A plastic water bottle is half full of water. You are outdoors on a sunny day with no other tools available. What does this bottle afford?"
+    expected: "The bottle affords drinking the water, pouring water to clean hands or a wound, watering a plant, cooling off by pouring on skin, using as a lens to focus sunlight (starting a fire in an emergency), using as a magnifier, refilling from a stream, carrying water, using as a weight or anchor for a tarp, squeezing to create a water jet, cutting in half to make a scoop or funnel, and using as a rolling pin on soft material."
+    expected_actions:
+      - drink
+      - pour_to_clean
+      - water_plant
+      - cool_off
+      - focus_sunlight
+      - refill
+      - carry_water
+      - use_as_weight
+      - squeeze_for_jet
+      - cut_to_make_funnel
+      - use_as_rolling_pin
+    expected_risks:
+      - dehydration_if_water_wasted
+      - fire_hazard_from_light_focus
+      - sharp_edges_if_cut
+      - contamination_if_refilled_from_unsafe_source
+    scoring: multi_match
+    difficulty: hard
+    requires_uncertainty: false
+    metadata:
+      notes: "Tests context-sensitive affordance reasoning. The outdoor setting and lack of other tools should expand the model's affordance set beyond typical indoor uses."

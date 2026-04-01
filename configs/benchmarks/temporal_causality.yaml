@@ -1,0 +1,119 @@
+# Temporal Causality Benchmark - Project Witness v0.1
+# Tests whether a model can reason about cause and effect over time.
+# "What happens next?" and "What happened before?" questions.
+
+tasks:
+  - task_id: causality_001
+    video: null
+    image: null
+    category: temporal_causality
+    subcategory: prediction
+    prompt: "A glass of water is sitting on the very edge of a table. A person walking by bumps the table with their hip. What happens next?"
+    expected: "The bump transfers force to the table, which jolts the glass. Because the glass is on the very edge, it is likely to slide off or tip over, falling to the floor and shattering, spilling water."
+    expected_actions: null
+    expected_risks: null
+    scoring: llm_judge
+    difficulty: easy
+    requires_uncertainty: false
+    metadata: null
+
+  - task_id: causality_002
+    video: null
+    image: null
+    category: temporal_causality
+    subcategory: prediction
+    prompt: "Water is being poured from a pitcher into a cup that is already full to the brim. The pouring continues for another three seconds. What happens?"
+    expected: "The water overflows the cup almost immediately. Water spills over the rim and onto the surface below. The cup cannot hold more water than its volume, so the excess runs off the sides."
+    expected_actions: null
+    expected_risks: null
+    scoring: llm_judge
+    difficulty: easy
+    requires_uncertainty: false
+    metadata: null
+
+  - task_id: causality_003
+    video: null
+    image: null
+    category: temporal_causality
+    subcategory: prediction
+    prompt: "An ice cube is placed in a bowl of warm water. Describe what happens over the next 15 minutes."
+    expected: "The ice cube begins to melt as heat transfers from the warm water into the ice. The cube shrinks progressively, and the water cools slightly. Small bubbles may form on the ice surface as dissolved air is released. Within 15 minutes the ice cube likely melts completely, leaving slightly cooler water than before."
+    expected_actions: null
+    expected_risks: null
+    scoring: llm_judge
+    difficulty: easy
+    requires_uncertainty: false
+    metadata: null
+
+  - task_id: causality_004
+    video: null
+    image: null
+    category: temporal_causality
+    subcategory: prediction
+    prompt: "A lit candle is left burning on a shelf in a room with no drafts. The candle is 15 centimeters tall. What does the scene look like after four hours?"
+    expected: "The candle is significantly shorter, as the wax has melted and burned away over four hours. There is a pool of solidified wax around the base where drips accumulated. The flame may still be burning if the candle had enough wax, but a 15 cm candle may be nearly or fully consumed after four hours, in which case the flame has gone out and a thin trail of smoke lingers."
+    expected_actions: null
+    expected_risks: null
+    scoring: llm_judge
+    difficulty: medium
+    requires_uncertainty: true
+    metadata:
+      notes: "Exact burn rate depends on candle type. A good answer acknowledges this uncertainty."
+
+  - task_id: causality_005
+    video: null
+    image: null
+    category: temporal_causality
+    subcategory: retrodiction
+    prompt: "You walk into a kitchen and see a broken egg on the floor, a stool pulled up to the counter, and an open egg carton on the counter with one egg missing. What most likely happened?"
+    expected: "A person (likely a child, given the stool) climbed the stool to reach the egg carton on the counter, took out an egg, and dropped it on the floor. The stool was needed because the counter was too high to reach without it."
+    expected_actions: null
+    expected_risks: null
+    scoring: llm_judge
+    difficulty: medium
+    requires_uncertainty: true
+    metadata: null
+
+  - task_id: causality_006
+    video: null
+    image: null
+    category: temporal_causality
+    subcategory: prediction
+    prompt: "A metal spoon is left in a pot of boiling soup on a stove. After five minutes, someone grabs the spoon handle with bare hands. What happens?"
+    expected: "The person feels immediate pain and likely drops or releases the spoon quickly. Metal conducts heat well, so the handle has become very hot from the boiling soup. This can cause a burn on the person's hand."
+    expected_actions: null
+    expected_risks: null
+    scoring: llm_judge
+    difficulty: medium
+    requires_uncertainty: false
+    metadata: null
+
+  - task_id: causality_007
+    video: null
+    image: null
+    category: temporal_causality
+    subcategory: retrodiction
+    prompt: "You find a parked car with the engine still warm, the driver's seat pushed far back, a tall coffee cup in the holder that is half full and still slightly warm, and the radio set to a news station. Reconstruct what likely happened in the last 30 minutes."
+    expected: "A tall person was driving the car recently (seat pushed back, warm engine). They were listening to news radio during the drive and drinking coffee. They parked and left the car a short time ago, probably within the last 10 to 20 minutes, because both the engine and coffee are still warm but cooling."
+    expected_actions: null
+    expected_risks: null
+    scoring: llm_judge
+    difficulty: hard
+    requires_uncertainty: true
+    metadata:
+      notes: "Tests integration of multiple temporal clues into a coherent backward-looking narrative."
+
+  - task_id: causality_008
+    video: null
+    image: null
+    category: temporal_causality
+    subcategory: chain_prediction
+    prompt: "A large tree in a yard has roots that have been growing under a concrete sidewalk for years. After a heavy rainstorm lasting two days, the ground is saturated with water. Describe the sequence of events that could unfold over the next week."
+    expected: "The saturated soil loses structural integrity, weakening its grip on the tree's roots. The roots, already pressing against the underside of the sidewalk, may heave upward as the soil swells with water. Over the next few days, sections of the sidewalk could crack or buckle. If the tree is large and the soil stays saturated, the tree itself may begin to lean as its root anchorage loosens. In a worst case, strong wind during the wet period could topple the tree. Even without wind, the sidewalk damage is likely to worsen as the soil goes through wet-dry cycles."
+    expected_actions: null
+    expected_risks: null
+    scoring: llm_judge
+    difficulty: hard
+    requires_uncertainty: true
+    metadata:
+      notes: "Tests ability to reason through a multi-step causal chain unfolding over days."
