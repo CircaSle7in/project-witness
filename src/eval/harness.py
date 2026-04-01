@@ -168,6 +168,13 @@ async def run_observed(
     The observer assesses each model response and may gate it. The gate
     decision and calibrated confidence are recorded in the result.
 
+    Note on v0.1 semantics: the model's text response is passed as
+    proposed_action to the observer. In v0.1 we are measuring whether
+    the observer can identify when the model's answer is likely wrong
+    (calibration measurement), not gating actual executable actions.
+    In v0.5 with AI2-THOR integration, proposed_action will be a real
+    action in a simulated environment.
+
     Args:
         tasks: List of evaluation tasks to run.
         model: The model wrapper to query.
