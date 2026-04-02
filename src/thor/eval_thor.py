@@ -72,39 +72,59 @@ async def run_thor_eval(
     run_baseline = mode in ("baseline", "both")
     run_observed = mode in ("observed", "both")
 
+    # Group tasks by scene to reuse controllers (avoid rapid Unity restarts)
+    from collections import defaultdict as _defaultdict
+
+    tasks_by_scene: dict[str, list[tuple[int, TaskDefinition]]] = _defaultdict(list)
     for i, task in enumerate(tasks):
-        logger.info(
-            "Task %d/%d: %s (scene=%s)",
-            i + 1, len(tasks), task.task_id, task.scene_name,
-        )
+        tasks_by_scene[task.scene_name].append((i, task))
 
-        # --- Baseline run ---
-        if run_baseline:
-            result = await _run_single_task(
-                task, model, observer_active=False
-            )
-            if result is not None:
-                baseline_results.append(result)
-                logger.info(
-                    "  Baseline: success=%s, steps=%d",
-                    result.success, result.steps_taken,
-                )
-            else:
-                logger.warning("  Baseline: skipped (THOR launch failed)")
+    for scene_name, scene_tasks in tasks_by_scene.items():
+        # Launch one controller per scene
+        from src.thor.controller import THORLaunchError, WitnessController
 
-        # --- Observed run ---
-        if run_observed:
-            result = await _run_single_task(
-                task, model, observer_active=True
-            )
-            if result is not None:
-                observed_results.append(result)
+        try:
+            controller = WitnessController(scene=scene_name, headless=True)
+        except (THORLaunchError, Exception) as exc:
+            logger.warning("Cannot launch THOR for scene %s: %s", scene_name, exc)
+            for i, task in scene_tasks:
+                logger.warning("  Skipping %s (scene unavailable)", task.task_id)
+            continue
+
+        try:
+            for idx, (i, task) in enumerate(scene_tasks):
                 logger.info(
-                    "  Observed: success=%s, steps=%d, gated=%d",
-                    result.success, result.steps_taken, result.actions_gated,
+                    "Task %d/%d: %s (scene=%s)",
+                    i + 1, len(tasks), task.task_id, task.scene_name,
                 )
-            else:
-                logger.warning("  Observed: skipped (THOR launch failed)")
+
+                # --- Baseline run ---
+                if run_baseline:
+                    controller.reset(scene_name)
+                    result = await _run_task_with_controller(
+                        task, model, controller, observer_active=False
+                    )
+                    if result is not None:
+                        baseline_results.append(result)
+                        logger.info(
+                            "  Baseline: success=%s, steps=%d",
+                            result.success, result.steps_taken,
+                        )
+
+                # --- Observed run ---
+                if run_observed:
+                    controller.reset(scene_name)
+                    result = await _run_task_with_controller(
+                        task, model, controller, observer_active=True
+                    )
+                    if result is not None:
+                        observed_results.append(result)
+                        logger.info(
+                            "  Observed: success=%s, steps=%d, gated=%d",
+                            result.success, result.steps_taken, result.actions_gated,
+                        )
+        finally:
+            controller.stop()
 
     # Store results
     if baseline_results:
@@ -122,46 +142,27 @@ async def run_thor_eval(
     return results
 
 
-async def _run_single_task(
+async def _run_task_with_controller(
     task: TaskDefinition,
     model: object,
+    controller: object,
     observer_active: bool,
 ) -> TaskResult | None:
-    """Run a single task with or without the observer.
-
-    Creates a fresh THOR controller, planner, and optionally an observer
-    for each run. Handles THOR launch failures gracefully.
+    """Run a single task using an existing THOR controller.
 
     Args:
         task: The task to run.
         model: The LLM model instance for planning.
+        controller: An already-launched WitnessController.
         observer_active: Whether to use the observer.
 
     Returns:
-        A TaskResult, or None if THOR could not launch.
+        A TaskResult, or None on error.
     """
     from src.thor.agent import WitnessAgent
-    from src.thor.controller import THORLaunchError, WitnessController
     from src.thor.planner import ActionPlanner
 
-    controller: WitnessController | None = None
     db: duckdb.DuckDBPyConnection | None = None
-
-    try:
-        controller = WitnessController(
-            scene=task.scene_name, headless=True
-        )
-    except THORLaunchError as exc:
-        logger.warning(
-            "Cannot launch THOR for scene %s: %s", task.scene_name, exc
-        )
-        return None
-    except Exception as exc:
-        logger.warning(
-            "Unexpected error launching THOR for scene %s: %s",
-            task.scene_name, exc,
-        )
-        return None
 
     try:
         planner = ActionPlanner(model)
@@ -179,8 +180,7 @@ async def _run_single_task(
             observer=observer,
         )
 
-        result = await agent.run_task(task)
-        return result
+        return await agent.run_task(task)
 
     except Exception as exc:
         logger.error(
@@ -188,8 +188,6 @@ async def _run_single_task(
         )
         return None
     finally:
-        if controller is not None:
-            controller.stop()
         if db is not None:
             db.close()
 
