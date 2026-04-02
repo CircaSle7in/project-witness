@@ -198,6 +198,7 @@ Respond with ONLY a JSON object in this exact format:
   "action": "<action_name>",
   "target_object": "<objectId or null>",
   "predicted_state_changes": ["<change1>", "<change2>"],
+  "confidence": <float 0.0 to 1.0>,
   "reasoning": "<brief explanation of why this action>"
 }}
 
@@ -255,11 +256,18 @@ Choose the single best next action. Be specific about predicted state changes.""
                 action = FALLBACK_ACTION
                 target = None
 
+            # Prefer confidence from the JSON if present
+            json_confidence = parsed.get("confidence")
+            if isinstance(json_confidence, (int, float)):
+                final_confidence = max(0.0, min(1.0, float(json_confidence)))
+            else:
+                final_confidence = confidence
+
             return ActionProposal(
                 action=action,
                 target_object=target if target != "null" else None,
                 predicted_state_changes=changes if isinstance(changes, list) else [],
-                planner_confidence=confidence,
+                planner_confidence=final_confidence,
                 reasoning=reasoning,
             )
 
