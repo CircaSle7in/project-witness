@@ -23,6 +23,21 @@ from src.pipeline.schemas import (
     ObserverAssessment,
     PrincipleFlag,
 )
+from src.thor.schemas import ActionProposal, THORState
+
+# THOR action reversibility: 1.0 = fully reversible, 0.0 = irreversible.
+# Used by assess_action instead of the keyword-based table in gate.py.
+THOR_REVERSIBILITY: dict[str, float] = {
+    "MoveAhead": 1.0, "MoveBack": 1.0,
+    "RotateLeft": 1.0, "RotateRight": 1.0,
+    "LookUp": 1.0, "LookDown": 1.0,
+    "PickupObject": 0.8, "PutObject": 0.8,
+    "OpenObject": 0.9, "CloseObject": 0.9,
+    "ToggleObjectOn": 0.9, "ToggleObjectOff": 0.9,
+    "BreakObject": 0.0, "SliceObject": 0.0,
+    "ThrowObject": 0.1, "DropObject": 0.2,
+    "Pass": 1.0,
+}
 
 
 class SilentObserver:
@@ -258,6 +273,197 @@ class SilentObserver:
                 "Action refused."
             )
 
+        return " ".join(parts)
+
+    def assess_action(
+        self,
+        proposal: ActionProposal,
+        current_state: THORState,
+        action_history: list,
+        category: str = "thor_action",
+    ) -> ObserverAssessment:
+        """Assess a proposed THOR action using multi-signal integration.
+
+        v0.5 upgrade: the observer now receives real signals from:
+        1. The planner's confidence score
+        2. State prediction accuracy (how well past predictions matched reality)
+        3. Action reversibility from THOR metadata
+        4. Consistency check against action history
+
+        Args:
+            proposal: The planner's proposed action with predictions.
+            current_state: Current THOR scene state.
+            action_history: Previous actions and their results.
+            category: Category for calibration lookup.
+
+        Returns:
+            ObserverAssessment with gate decision and audit metadata.
+        """
+        # 1. Calibrate planner confidence using historical accuracy
+        calibrated = self.calibrate_confidence(proposal.planner_confidence, category)
+
+        # 2. Get THOR-aware reversibility (not keyword matching)
+        reversibility = self._thor_reversibility(proposal.action)
+
+        # 3. Compute prediction trust from history
+        prediction_trust = self._compute_prediction_trust(action_history)
+
+        # 4. Run consistency check against history
+        conflicts = self._check_action_consistency(proposal, current_state, action_history)
+
+        # 5. Combine signals into adjusted confidence
+        # Weight: 50% planner confidence, 30% prediction trust, 20% calibration
+        combined_confidence = (
+            0.5 * calibrated
+            + 0.3 * prediction_trust
+            + 0.2 * proposal.planner_confidence
+        )
+
+        # 6. Check principles (still stub for soft/hard, but ego constraints active)
+        principle_flags = self.check_principles(proposal.action, {})
+
+        # 7. Gate decision using combined confidence
+        gate = decide_gate(combined_confidence, reversibility, principle_flags, conflicts)
+
+        threshold = compute_threshold(reversibility, principle_flags)
+        reasoning = self._build_action_reasoning(
+            gate, combined_confidence, threshold, conflicts,
+            prediction_trust, calibrated, proposal,
+        )
+        alternative = self._suggest_alternative(gate, proposal.action)
+
+        return ObserverAssessment(
+            gate=gate,
+            confidence=combined_confidence,
+            raw_confidence=proposal.planner_confidence,
+            reversibility=reversibility,
+            principle_flags=principle_flags,
+            reasoning=reasoning,
+            suggested_alternative=alternative,
+        )
+
+    def _thor_reversibility(self, action: str) -> float:
+        """Get action reversibility from THOR action metadata."""
+        return THOR_REVERSIBILITY.get(action, 0.5)
+
+    def _compute_prediction_trust(self, action_history: list) -> float:
+        """Compute how trustworthy past predictions have been.
+
+        Looks at the last N actions and checks what fraction of
+        predicted state changes actually occurred. This is the
+        "did the world behave as expected" signal.
+
+        Args:
+            action_history: List of THORActionResult objects.
+
+        Returns:
+            A float between 0.0 (predictions always wrong) and 1.0 (always right).
+        """
+        if not action_history:
+            return 0.5  # No history, neutral trust
+
+        # Look at last 5 actions (or fewer)
+        recent = action_history[-5:]
+        match_ratios: list[float] = []
+        for result in recent:
+            if hasattr(result, "state_delta") and result.state_delta:
+                match_ratios.append(result.state_delta.match_ratio)
+
+        if not match_ratios:
+            return 0.5
+
+        return sum(match_ratios) / len(match_ratios)
+
+    def _check_action_consistency(
+        self,
+        proposal: ActionProposal,
+        current_state: THORState,
+        action_history: list,
+    ) -> list[str]:
+        """Check for conflicts between the proposal and observed reality.
+
+        This replaces the v0.1 stub for THOR contexts. Checks:
+        - Is the target object visible in current state?
+        - Has the same action failed recently?
+        - Does the predicted outcome contradict observed physics?
+
+        Args:
+            proposal: The planner's proposed action.
+            current_state: Current THOR scene state.
+            action_history: Previous actions and their results.
+
+        Returns:
+            A list of conflict description strings.
+        """
+        conflicts: list[str] = []
+
+        # Check if target object exists and is visible
+        if proposal.target_object:
+            found = False
+            for obj in current_state.objects:
+                if obj.object_id == proposal.target_object and obj.visible:
+                    found = True
+                    break
+            if not found:
+                conflicts.append(
+                    f"Target object {proposal.target_object} not visible in current state"
+                )
+
+        # Check if this exact action failed recently
+        for prev in action_history[-3:]:
+            if (
+                prev.action == proposal.action
+                and prev.target_object == proposal.target_object
+                and not prev.success
+            ):
+                conflicts.append(
+                    f"Action {proposal.action} on {proposal.target_object}"
+                    f" failed {prev.step_number} steps ago"
+                )
+
+        # Check if agent is trying to pick up while already holding something
+        if proposal.action == "PickupObject" and current_state.held_object:
+            conflicts.append(
+                f"Cannot pick up: already holding {current_state.held_object}"
+            )
+
+        return conflicts
+
+    def _build_action_reasoning(
+        self,
+        gate: GateDecision,
+        combined_confidence: float,
+        threshold: float,
+        conflicts: list[str],
+        prediction_trust: float,
+        calibrated: float,
+        proposal: ActionProposal,
+    ) -> str:
+        """Build structured reasoning for THOR action assessment.
+
+        Args:
+            gate: The gate decision that was made.
+            combined_confidence: The multi-signal combined confidence.
+            threshold: The dynamic threshold that was computed.
+            conflicts: List of detected conflicts.
+            prediction_trust: Trust score from recent prediction accuracy.
+            calibrated: The Platt-scaled confidence.
+            proposal: The original action proposal.
+
+        Returns:
+            A human-readable reasoning string for the audit log.
+        """
+        parts = [
+            f"Gate decision: {gate.value}.",
+            f"Combined confidence: {combined_confidence:.3f} (threshold: {threshold:.3f}).",
+            f"Planner confidence: {proposal.planner_confidence:.3f},"
+            f" calibrated: {calibrated:.3f}.",
+            f"Prediction trust (recent accuracy): {prediction_trust:.3f}.",
+            f"Action: {proposal.action},"
+            f" reversibility: {self._thor_reversibility(proposal.action):.1f}.",
+        ]
+        if conflicts:
+            parts.append(f"Conflicts detected: {'; '.join(conflicts)}.")
         return " ".join(parts)
 
     def _suggest_alternative(

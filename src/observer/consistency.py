@@ -1,12 +1,20 @@
-"""Belief conflict detection. Stub for v0.1, returns empty list. Full implementation in v0.2."""
+"""Belief conflict detection for the Silent Observer.
+
+v0.1: stub returning empty list.
+v0.5: real conflict detection against action history and scene state.
+The observer.py assess_action method handles THOR-specific consistency.
+This module provides the generic interface for non-THOR contexts.
+"""
 
 
 def check_consistency(proposed_action: str, world_state: dict, belief_state: dict) -> list:
     """Check for conflicts between proposed action and current beliefs.
 
-    Stub: always returns no conflicts. In v0.2 this will compare the proposed
-    action against the agent's belief graph, detect contradictions, and flag
-    actions that rely on unverified or stale beliefs.
+    For THOR environments, use SilentObserver.assess_action() instead,
+    which has access to typed state objects and action history.
+
+    For non-THOR (v0.1 eval tasks), returns empty list when world_state
+    is empty, and performs generic dict-based checks otherwise.
 
     Args:
         proposed_action: Description of the action being proposed.
@@ -14,6 +22,17 @@ def check_consistency(proposed_action: str, world_state: dict, belief_state: dic
         belief_state: Current belief state as a dictionary.
 
     Returns:
-        A list of conflict descriptions. Empty in v0.1.
+        A list of conflict descriptions. Empty when world_state is empty.
     """
-    return []
+    # Non-empty world_state means we have real state to check
+    if not world_state:
+        return []
+
+    conflicts: list[str] = []
+
+    # Generic checks that work with dict-based world state
+    if "held_object" in world_state and world_state["held_object"]:
+        if "pick" in proposed_action.lower():
+            conflicts.append("Already holding an object")
+
+    return conflicts
