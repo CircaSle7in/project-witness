@@ -312,12 +312,23 @@ class SilentObserver:
         conflicts = self._check_action_consistency(proposal, current_state, action_history)
 
         # 5. Combine signals into adjusted confidence
-        # Weight: 50% planner confidence, 30% prediction trust, 20% calibration
-        combined_confidence = (
-            0.5 * calibrated
-            + 0.3 * prediction_trust
-            + 0.2 * proposal.planner_confidence
-        )
+        # Cold-start: when we have no calibration data, trust planner more
+        has_calibration = category in self._platt_params
+        if has_calibration:
+            # With calibration data, weight toward calibrated signal
+            combined_confidence = (
+                0.5 * calibrated
+                + 0.3 * prediction_trust
+                + 0.2 * proposal.planner_confidence
+            )
+        else:
+            # Cold-start: lean on raw planner confidence, use prediction
+            # trust and calibration as gentle adjustments
+            combined_confidence = (
+                0.6 * proposal.planner_confidence
+                + 0.25 * prediction_trust
+                + 0.15 * calibrated
+            )
 
         # 6. Check principles (still stub for soft/hard, but ego constraints active)
         principle_flags = self.check_principles(proposal.action, {})
@@ -360,7 +371,7 @@ class SilentObserver:
             A float between 0.0 (predictions always wrong) and 1.0 (always right).
         """
         if not action_history:
-            return 0.5  # No history, neutral trust
+            return 0.7  # No history, benefit of the doubt
 
         # Look at last 5 actions (or fewer)
         recent = action_history[-5:]

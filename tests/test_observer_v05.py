@@ -224,12 +224,12 @@ class TestAssessAction:
         break_proposal = _make_proposal(
             action="BreakObject",
             target_object="Mug|1",
-            planner_confidence=0.95,
+            planner_confidence=0.8,
         )
         move_proposal = _make_proposal(
             action="MoveAhead",
             target_object=None,
-            planner_confidence=0.95,
+            planner_confidence=0.8,
         )
 
         result_break = observer.assess_action(break_proposal, state, good_history)
@@ -265,9 +265,9 @@ class TestThorReversibility:
 class TestPredictionTrust:
     """Tests for the prediction trust computation."""
 
-    def test_empty_history_returns_neutral(self, observer: SilentObserver) -> None:
-        """No history should return 0.5 (neutral trust)."""
-        assert observer._compute_prediction_trust([]) == 0.5
+    def test_empty_history_returns_optimistic(self, observer: SilentObserver) -> None:
+        """No history should return 0.7 (benefit of the doubt)."""
+        assert observer._compute_prediction_trust([]) == 0.7
 
     def test_perfect_history_returns_high(self, observer: SilentObserver) -> None:
         """All match_ratio=1.0 should return 1.0."""
