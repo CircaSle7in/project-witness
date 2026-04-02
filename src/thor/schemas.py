@@ -104,3 +104,27 @@ class TaskDefinition(BaseModel):
     target_receptacle_type: str  # e.g. "DiningTable"
     max_steps: int = 30
     description: str
+
+
+class TaskResult(BaseModel):
+    """Result of running a complete rearrangement task.
+
+    Captures success/failure, step counts, observer statistics, and a
+    simplified action log for comparison between baseline and observed
+    modes.
+    """
+
+    task_id: str
+    scene_name: str
+    success: bool
+    steps_taken: int
+    max_steps: int
+    total_actions_proposed: int
+    actions_executed: int
+    actions_gated: int  # blocked by observer
+    observer_active: bool
+    action_log: list[dict] = Field(default_factory=list)  # simplified log of each step
+    gate_distribution: dict[str, int] = Field(default_factory=dict)  # count of each gate decision
+    mean_confidence: float = 0.0
+    mean_prediction_trust: float = 0.0
+    completion_time_s: float = 0.0

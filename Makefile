@@ -1,4 +1,4 @@
-.PHONY: all eval report transforms cockpit test lint format clean setup
+.PHONY: all eval report transforms cockpit test lint format clean setup thor-eval
 
 all: lint test eval report
 
@@ -27,6 +27,9 @@ clean:
 	find . -type d -name __pycache__ -exec rm -rf {} +
 	rm -rf .ruff_cache
 	rm -f data/results/*.duckdb
+
+thor-eval:
+	python -m src.thor.eval_thor
 
 setup:
 	python3.12 -m venv .venv
