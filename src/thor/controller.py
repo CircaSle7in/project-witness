@@ -121,15 +121,25 @@ class WitnessController:
                     "CloudRendering unavailable, falling back to default renderer."
                 )
 
-        # Fall back to default platform renderer
+        # Fall back to default platform renderer with timeout
+        import signal
+
+        def _timeout_handler(signum: int, frame: object) -> None:
+            raise TimeoutError(f"THOR launch timed out for scene '{scene}'")
+
         try:
+            old_handler = signal.signal(signal.SIGALRM, _timeout_handler)
+            signal.alarm(30)  # 30 second timeout
             self._controller = Controller(
                 scene=scene,
                 renderDepthImage=False,
                 renderInstanceSegmentation=False,
             )
+            signal.alarm(0)  # Cancel alarm
+            signal.signal(signal.SIGALRM, old_handler)
             logger.info("Launched THOR with default renderer for scene %s", scene)
-        except Exception as exc:
+        except (TimeoutError, Exception) as exc:
+            signal.alarm(0)
             raise THORLaunchError(
                 f"Failed to launch AI2-THOR for scene '{scene}'. "
                 f"Ensure a display is available or use headless=True. "
