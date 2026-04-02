@@ -1,11 +1,14 @@
-.PHONY: all eval report cockpit test lint format clean setup
+.PHONY: all eval report transforms cockpit test lint format clean setup
 
 all: lint test eval report
 
 eval:
 	python -m src.eval.harness
 
-report:
+transforms:
+	python scripts/run_transforms.py
+
+report: transforms
 	python -m src.eval.reporter
 
 cockpit:
