@@ -125,10 +125,10 @@ class TestGateDecisions:
         # 0.95 * 0.85 = 0.8075, threshold for "look" (rev=1.0) is 0.7 -> ACT
         assert assessment.gate == GateDecision.ACT
 
-    def test_gate_low_confidence_reversible_is_wait(
+    def test_gate_low_confidence_reversible_gathers_evidence(
         self, observer: SilentObserver
     ) -> None:
-        """Low confidence + reversible action = WAIT."""
+        """Low confidence + reversible action = GATHER_EVIDENCE."""
         assessment = observer.assess(
             proposed_action="look at the object",
             world_state={},
@@ -136,8 +136,9 @@ class TestGateDecisions:
             belief_state={},
             category="physics",
         )
-        # 0.3 * 0.85 = 0.255, below threshold, but "look" is reversible -> WAIT
-        assert assessment.gate == GateDecision.WAIT
+        # 0.3 * 0.85 = 0.255, below threshold, "look" is reversible -> GATHER_EVIDENCE
+        # (not WAIT, because WAIT deadlocks the agent with no recovery path)
+        assert assessment.gate == GateDecision.GATHER_EVIDENCE
 
     def test_gate_low_confidence_irreversible_is_ask_human(
         self, observer: SilentObserver

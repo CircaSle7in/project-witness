@@ -143,8 +143,11 @@ def decide_gate(
     if calibrated_confidence >= threshold:
         return GateDecision.ACT
 
-    # Low confidence: choose between WAIT and ASK_HUMAN based on reversibility
+    # Low confidence on a reversible action: gather more evidence rather than
+    # freezing. GATHER_EVIDENCE triggers a safe observation action (look/rotate)
+    # which lets the agent rebuild prediction trust through successful observations.
+    # WAIT would deadlock because no actions means no new trust signal.
     if reversibility >= 0.7:
-        return GateDecision.WAIT
+        return GateDecision.GATHER_EVIDENCE
     else:
         return GateDecision.ASK_HUMAN
