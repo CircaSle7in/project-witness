@@ -122,8 +122,12 @@ class WitnessAgent:
                 break
 
             # 2. Propose: ask planner for next action
+            # Capture frame for vision-enabled planners
+            frame_png = None
+            if self._planner._use_vision:
+                frame_png = self._controller.capture_frame()
             proposal = await self._planner.propose_action(
-                task, state, action_history
+                task, state, action_history, frame_png=frame_png
             )
             total_proposed += 1
 

@@ -38,6 +38,7 @@ async def run_thor_eval(
     model_name: str = "gemini",
     mode: str = "both",
     db_path: str = _DEFAULT_DB_PATH,
+    use_vision: bool = False,
 ) -> dict:
     """Run THOR evaluation in baseline and/or observed mode.
 
@@ -52,6 +53,7 @@ async def run_thor_eval(
         model_name: Which model to use for planning ("gemini" or "qwen").
         mode: Which modes to run: "baseline", "observed", or "both".
         db_path: Path to the DuckDB file for storing results.
+        use_vision: If True, send THOR screenshots to the planner.
 
     Returns:
         Dict with "baseline_results" and/or "observed_results" lists,
@@ -102,7 +104,8 @@ async def run_thor_eval(
                 if run_baseline:
                     controller.reset(scene_name)
                     result = await _run_task_with_controller(
-                        task, model, controller, observer_active=False
+                        task, model, controller,
+                        observer_active=False, use_vision=use_vision,
                     )
                     if result is not None:
                         baseline_results.append(result)
@@ -115,7 +118,8 @@ async def run_thor_eval(
                 if run_observed:
                     controller.reset(scene_name)
                     result = await _run_task_with_controller(
-                        task, model, controller, observer_active=True
+                        task, model, controller,
+                        observer_active=True, use_vision=use_vision,
                     )
                     if result is not None:
                         observed_results.append(result)
@@ -147,6 +151,7 @@ async def _run_task_with_controller(
     model: object,
     controller: object,
     observer_active: bool,
+    use_vision: bool = False,
 ) -> TaskResult | None:
     """Run a single task using an existing THOR controller.
 
@@ -155,6 +160,7 @@ async def _run_task_with_controller(
         model: The LLM model instance for planning.
         controller: An already-launched WitnessController.
         observer_active: Whether to use the observer.
+        use_vision: If True, send THOR screenshots to the planner.
 
     Returns:
         A TaskResult, or None on error.
@@ -165,7 +171,7 @@ async def _run_task_with_controller(
     db: duckdb.DuckDBPyConnection | None = None
 
     try:
-        planner = ActionPlanner(model)
+        planner = ActionPlanner(model, use_vision=use_vision)
 
         observer = None
         if observer_active:
@@ -432,6 +438,11 @@ def main() -> None:
         help=f"DuckDB output path (default: {_DEFAULT_DB_PATH}).",
     )
     parser.add_argument(
+        "--vision",
+        action="store_true",
+        help="Send THOR screenshots to the planner (visual grounding).",
+    )
+    parser.add_argument(
         "--verbose",
         action="store_true",
         help="Enable debug logging.",
@@ -449,9 +460,10 @@ def main() -> None:
     if args.tasks > 0:
         tasks = tasks[: args.tasks]
 
+    vision_label = "+vision" if args.vision else "text-only"
     logger.info(
-        "Running THOR assessment: model=%s, mode=%s, tasks=%d",
-        args.model, args.mode, len(tasks),
+        "Running THOR assessment: model=%s, mode=%s, tasks=%d, planner=%s",
+        args.model, args.mode, len(tasks), vision_label,
     )
 
     results = asyncio.run(
@@ -460,6 +472,7 @@ def main() -> None:
             model_name=args.model,
             mode=args.mode,
             db_path=args.db_path,
+            use_vision=args.vision,
         )
     )
 

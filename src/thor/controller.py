@@ -146,6 +146,22 @@ class WitnessController:
                 f"Original error: {exc}"
             ) from exc
 
+    def capture_frame(self) -> bytes:
+        """Capture the current view as PNG bytes.
+
+        Returns:
+            PNG-encoded bytes of the agent's current camera view.
+        """
+        import cv2
+        import numpy as np
+
+        frame = self._controller.last_event.frame  # (H, W, 3) RGB uint8
+        if frame is None:
+            return b""
+        bgr = cv2.cvtColor(np.asarray(frame), cv2.COLOR_RGB2BGR)
+        _, png_buf = cv2.imencode(".png", bgr)
+        return png_buf.tobytes()
+
     def get_state(self) -> THORState:
         """Extract current scene state as a THORState.
 

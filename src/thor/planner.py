@@ -60,37 +60,56 @@ class ActionPlanner:
     All actions are proposals that the observer evaluates before execution.
     """
 
-    def __init__(self, model: BaseModel) -> None:
+    def __init__(self, model: BaseModel, use_vision: bool = False) -> None:
         """Initialize with a model wrapper for planning.
 
         Args:
             model: The LLM to use for planning (Gemini Flash or Qwen).
+            use_vision: If True, send THOR screenshots with each planning prompt.
         """
         self._model = model
+        self._use_vision = use_vision
 
     async def propose_action(
         self,
         task: TaskDefinition,
         state: THORState,
         action_history: list[THORActionResult],
+        frame_png: bytes | None = None,
     ) -> ActionProposal:
         """Propose the next action for the given task and state.
 
         The planner receives the current state and history, then generates
-        a structured action proposal with predicted consequences.
+        a structured action proposal with predicted consequences. When
+        use_vision is True and a frame is provided, the screenshot is
+        sent alongside the text prompt for visual grounding.
 
         Args:
             task: The task being worked on.
             state: Current THOR scene state.
             action_history: Previous actions and their results.
+            frame_png: Optional PNG bytes of the current THOR camera view.
 
         Returns:
             An ActionProposal with action, target, predictions, and confidence.
         """
         prompt = self._build_planning_prompt(task, state, action_history)
 
+        # If vision mode, save frame to temp file and pass to model
+        image_path = None
+        if self._use_vision and frame_png:
+            import tempfile
+            tmp = tempfile.NamedTemporaryFile(
+                suffix=".png", delete=False, prefix="thor_frame_"
+            )
+            tmp.write(frame_png)
+            tmp.close()
+            image_path = tmp.name
+
         try:
-            response_text, confidence = await self._model.query(prompt)
+            response_text, confidence = await self._model.query(
+                prompt, image_path=image_path
+            )
             return self._parse_proposal(response_text, confidence)
         except Exception as exc:
             logger.warning(
@@ -103,6 +122,13 @@ class ActionPlanner:
                 planner_confidence=0.1,
                 reasoning=f"Fallback action due to planner error: {exc}",
             )
+        finally:
+            if image_path is not None:
+                import os
+                try:
+                    os.unlink(image_path)
+                except OSError:
+                    pass
 
     def _build_planning_prompt(
         self,
